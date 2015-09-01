@@ -6,8 +6,22 @@
 var express = require('express');
 var app = express();
 
+app.use(require("body-parser").json());
+
+var preguntas = [];
+var idPregunta = 0;
+
 app.get('/', function (req, res) {
   res.send('Hello World!');
+});
+
+app.post('/preguntas', function (req, res) {
+    req.body.id = idPregunta++;
+    req.body.contestada = false;
+    preguntas.push(req.body);
+    console.log("Pregunta recibida: " + JSON.stringify(req.body, null, 2));
+    console.log("Las preguntas son: " + JSON.stringify(preguntas, null, 2));
+    res.status(201).json(req.body);
 });
 
 var server = app.listen(3000, function () {
