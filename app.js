@@ -73,6 +73,7 @@ app.post('/preguntas/:id(\\d+)/contestar', function (req, res) {
     if (!pregunta.respuesta) {
         var docenteExistente = _.findWhere(docentes, req.body.callbackURL);
         if (!docenteExistente) {
+            // registrar docentes antes de poder contestar
             docentes.push(req.body.callbackURL);
         }
         pregunta.respuesta = req.body.respuesta;
@@ -83,6 +84,11 @@ app.post('/preguntas/:id(\\d+)/contestar', function (req, res) {
     }
     res.sendStatus(200);
 });
+
+app.post('/preguntas/:id(\\d+)/escribir', function (req, res) {
+    // notificar que alguien empezo a escribir una respuesta
+});
+
 
 var server = app.listen(3000, function () {
   var host = server.address().address;
