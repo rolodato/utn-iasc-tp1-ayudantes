@@ -7,6 +7,7 @@ var express = require('express');
 var _ = require('lodash');
 var app = express();
 var request = require('request');
+var utils = require('./utils.js');
 
 app.use(require("body-parser").json());
 
@@ -14,12 +15,6 @@ var preguntas = [];
 var alumnos = [];
 var docentes = [];
 var idPregunta = 0;
-
-function error (message) {
-    return {
-        error: message
-    };
-}
 
 function notificar (callbackURL, mensaje) {
     request.post({
@@ -35,20 +30,20 @@ function notificarTodos (mensaje) {
     });
 }
 
-function preguntaPorId(id) {
-    return _.findWhere(preguntas, {id: Number.parseInt(id) });
-}
-
 function todos () {
     return alumnos.concat(docentes);
 }
+
+process.on('uncaughtException', function (err) {
+    console.error(err);
+});
 
 app.get('/', function (req, res) {
   res.send('Hello World!');
 });
 
 app.get('/preguntas/:id(\\d+)', function (req, res) {
-    var pregunta = preguntaPorId(req.params.id);
+    var pregunta = utils.preguntaPorId(preguntas, req.params.id);
     if (pregunta) {
         res.status(200).json(pregunta);
     } else {
@@ -57,6 +52,7 @@ app.get('/preguntas/:id(\\d+)', function (req, res) {
 });
 
 app.post('/preguntas', function (req, res) {
+    console.log("PREGUNTA RECIBIDA");
     req.body.id = idPregunta++;
     preguntas.push(req.body);
     var alumnoExistente = _.findWhere(alumnos, req.body.callbackURL);
@@ -70,7 +66,7 @@ app.post('/preguntas', function (req, res) {
 });
 
 app.post('/preguntas/:id(\\d+)/contestar', function (req, res) {
-    var pregunta = preguntaPorId(req.params.id);
+    var pregunta = utils.preguntaPorId(preguntas, req.params.id);
     if (!pregunta) {
         res.sendStatus(404);
     }
@@ -81,8 +77,9 @@ app.post('/preguntas/:id(\\d+)/contestar', function (req, res) {
         }
         pregunta.respuesta = req.body.respuesta;
         notificarTodos(req.body);
+        console.log("PREGUNTA CONTESTADA");
     } else {
-        res.status(400).json(error("La pregunta ya fue contestada"));
+        res.status(400).json(utils.error("La pregunta ya fue contestada"));
     }
     res.sendStatus(200);
 });
