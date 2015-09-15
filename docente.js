@@ -22,13 +22,13 @@ function responder(pregunta) {
     });
 }
 
-setTimeout(function () {
-    responder({
-        id: 0,
-        callbackURL: 'http://localhost:' + process.argv[2],
-        respuesta: "Respuesta inicial"
-    });
-}, 2000)
+function suscribir(callbackURL, cb) {
+    request.post({
+        json: true,
+        body: { callbackURL: callbackURL },
+        url: 'http://localhost:3000/docentes'
+    }, cb);
+}
 
 setInterval(function () {
     if (preguntas.length > 0) {
@@ -51,7 +51,9 @@ app.post('/', function (req, res) {
 var server = app.listen(process.argv[2], function () {
   var host = server.address().address;
   var port = server.address().port;
+  suscribir(process.argv[2], function () {
+      console.log('Docente listening at http://%s:%s', host, port);
+  });
 
-  console.log('Example app listening at http://%s:%s', host, port);
 });
 

@@ -73,12 +73,12 @@ app.post('/preguntas/:id(\\d+)/contestar', function (req, res) {
     if (!pregunta.respuesta) {
         var docenteExistente = _.findWhere(docentes, req.body.callbackURL);
         if (!docenteExistente) {
-            // registrar docentes antes de poder contestar
-            docentes.push(req.body.callbackURL);
+            res.status(400).json(utils.error("Debe registrarse antes de poder contestar"));
+        } else {
+            pregunta.respuesta = req.body.respuesta;
+            notificarTodos(req.body);
+            console.log("PREGUNTA CONTESTADA");
         }
-        pregunta.respuesta = req.body.respuesta;
-        notificarTodos(req.body);
-        console.log("PREGUNTA CONTESTADA");
     } else {
         res.status(400).json(utils.error("La pregunta ya fue contestada"));
     }
@@ -89,10 +89,20 @@ app.post('/preguntas/:id(\\d+)/escribir', function (req, res) {
     // notificar que alguien empezo a escribir una respuesta
 });
 
+app.post('/docentes', function (req, res) {
+    var docenteExistente = _.findWhere(docentes, req.body.callbackURL);
+    if (!docenteExistente) {
+        docentes.push(req.body.callbackURL);
+        res.sendStatus(201);
+    } else {
+        res.status(400).json(utils.error("El docente ya esta inscripto"));
+    }
+});
+
 
 var server = app.listen(3000, function () {
   var host = server.address().address;
   var port = server.address().port;
 
-  console.log('Example app listening at http://%s:%s', host, port);
+  console.log('Server listening at http://%s:%s', host, port);
 });
