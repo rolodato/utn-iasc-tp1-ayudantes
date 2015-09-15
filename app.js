@@ -52,8 +52,8 @@ app.get('/preguntas/:id(\\d+)', function (req, res) {
 });
 
 app.post('/preguntas', function (req, res) {
-    req.body.id = idPregunta++;
     console.log("SERVER: PREGUNTA RECIBIDA: " + idPregunta);
+    req.body.id = idPregunta++;
     preguntas.push(req.body);
     var alumnoExistente = _.findWhere(alumnos, req.body.callbackURL);
     if (!alumnoExistente) {
@@ -86,8 +86,18 @@ app.post('/preguntas/:id(\\d+)/contestar', function (req, res) {
 });
 
 app.post('/preguntas/:id(\\d+)/escribir', function (req, res) {
-    notificarGrupo(docentes, { mensaje: "Alguien esta respondiendo la pregunta " + req.params.id } );
-    res.sendStatus(200);
+    var pregunta = utils.preguntaPorId(preguntas, req.params.id);
+    if (!pregunta) {
+        res.sendStatus(404);
+    } else {
+        if (pregunta.pending) {
+            res.sendStatus(403);
+        } else {
+            pregunta.pending = true;
+            notificarGrupo(docentes, { mensaje: "Alguien esta respondiendo la pregunta " + req.params.id } );
+            res.sendStatus(200);
+        }
+    }
 });
 
 app.post('/docentes', function (req, res) {

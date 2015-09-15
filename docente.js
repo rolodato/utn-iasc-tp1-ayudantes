@@ -19,8 +19,11 @@ function avisarRespuesta(pregunta) {
 }
 
 function responderConAviso(pregunta, respuesta) {
-    return avisarRespuesta(pregunta).then(function () {
+    return avisarRespuesta(pregunta).then(function (resp) {
         responder(pregunta, respuesta);
+    }).error(function () {
+        console.log("DOCENTE: Alguien ya esta contestando pregunta " + pregunta.id);
+        _.pull(preguntas, utils.preguntaPorId(preguntas, pregunta.id));
     });
 }
 
