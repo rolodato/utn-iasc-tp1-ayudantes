@@ -14,6 +14,7 @@ app.use(require("body-parser").json());
 var preguntas = [];
 var alumnos = [];
 var docentes = [];
+var docentesPending = [];
 var idPregunta = 0;
 
 function notificar (callbackURL, mensaje) {
@@ -60,7 +61,7 @@ app.post('/preguntas', function (req, res) {
         alumnos.push(req.body.callbackURL);
     }
     // No esperamos a que terminen los requests porque podrian colgarse/fallar
-    notificarTodos(req.body);
+    notificarGrupo(_.difference(docentes, docentesPending), req.body);
 
     res.status(201).json(req.body);
 });
@@ -75,6 +76,10 @@ app.post('/preguntas/:id(\\d+)/contestar', function (req, res) {
         if (!docenteExistente) {
             res.status(400).json(utils.error("Debe registrarse antes de poder contestar"));
         } else {
+            var docentePending = _.findWhere(docentesPending, req.body.callbackURL);
+            if (docentePending) {
+                _.pull(docentesPending, docentePending);
+            }
             pregunta.respuesta = req.body.respuesta;
             notificarTodos(req.body);
             res.sendStatus(200);
@@ -94,6 +99,7 @@ app.post('/preguntas/:id(\\d+)/escribir', function (req, res) {
             res.sendStatus(403);
         } else {
             pregunta.pending = true;
+            docentesPending.push(req.body.callbackURL);
             notificarGrupo(docentes, { mensaje: "Alguien esta respondiendo la pregunta " + req.params.id } );
             res.sendStatus(200);
         }

@@ -14,7 +14,8 @@ var callbackURL = "http://localhost:" + process.argv[2];
 
 function avisarRespuesta(pregunta) {
     return request.post({
-        url: '/preguntas/' + pregunta.id + '/escribir'
+        url: '/preguntas/' + pregunta.id + '/escribir',
+        body: { callbackURL: callbackURL }
     });
 }
 
