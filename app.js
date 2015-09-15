@@ -25,7 +25,11 @@ function notificar (callbackURL, mensaje) {
 }
 
 function notificarTodos (mensaje) {
-    todos().forEach(function (persona) {
+    notificarGrupo(todos(), mensaje);
+}
+
+function notificarGrupo (destinatarios, mensaje) {
+    destinatarios.forEach(function (persona) {
         notificar(persona, mensaje);
     });
 }
@@ -38,10 +42,6 @@ process.on('uncaughtException', function (err) {
     console.error(err);
 });
 
-app.get('/', function (req, res) {
-  res.send('Hello World!');
-});
-
 app.get('/preguntas/:id(\\d+)', function (req, res) {
     var pregunta = utils.preguntaPorId(preguntas, req.params.id);
     if (pregunta) {
@@ -52,8 +52,8 @@ app.get('/preguntas/:id(\\d+)', function (req, res) {
 });
 
 app.post('/preguntas', function (req, res) {
-    console.log("PREGUNTA RECIBIDA");
     req.body.id = idPregunta++;
+    console.log("SERVER: PREGUNTA RECIBIDA: " + idPregunta);
     preguntas.push(req.body);
     var alumnoExistente = _.findWhere(alumnos, req.body.callbackURL);
     if (!alumnoExistente) {
@@ -77,16 +77,17 @@ app.post('/preguntas/:id(\\d+)/contestar', function (req, res) {
         } else {
             pregunta.respuesta = req.body.respuesta;
             notificarTodos(req.body);
-            console.log("PREGUNTA CONTESTADA");
+            res.sendStatus(200);
+            console.log("SERVER: PREGUNTA CONTESTADA: " + req.params.id);
         }
     } else {
         res.status(400).json(utils.error("La pregunta ya fue contestada"));
     }
-    res.sendStatus(200);
 });
 
 app.post('/preguntas/:id(\\d+)/escribir', function (req, res) {
-    // notificar que alguien empezo a escribir una respuesta
+    notificarGrupo(docentes, { mensaje: "Alguien esta respondiendo la pregunta " + req.params.id } );
+    res.sendStatus(200);
 });
 
 app.post('/docentes', function (req, res) {

@@ -1,49 +1,66 @@
 var express = require('express');
-var request = require('request');
+var request = require('request').defaults({
+    json: true,
+    baseUrl: 'http://localhost:3000/'
+});
 var _ = require('lodash');
 var app = express();
 var utils = require('./utils.js');
 app.use(require('body-parser').json());
 
 var preguntas = [];
+var callbackURL = "http://localhost:" + process.argv[2];
 
-function responder(pregunta) {
+function avisarRespuesta(pregunta, cb) {
     request.post({
-        json: true,
-        body: pregunta,
-        url: 'http://localhost:3000/preguntas/' + pregunta.id + '/contestar'
+        url: '/preguntas/' + pregunta.id + '/escribir'
+    }, cb);
+}
+
+function responderConAviso(pregunta, respuesta) {
+    avisarRespuesta(pregunta, function () {
+        responder(pregunta, respuesta);
+    });
+}
+
+function responder(pregunta, respuesta) {
+    console.log("DOCENTE RESPONDIENDO PREGUNTA " + pregunta.id);
+    request.post({
+        body: {
+            callbackURL: callbackURL,
+            respuesta: respuesta
+        },
+        url: '/preguntas/' + pregunta.id + '/contestar'
     }, function (err, resp) {
+        _.pull(preguntas, pregunta);
         if (resp.statusCode === 200) {
-            _.pull(preguntas, pregunta);
-            console.log("RESPONDI PREGUNTA");
+            console.log("DOCENTE: CONTESTE PREGUNTA " + pregunta.id);
         } else {
-            console.error(resp.statusCode);
+            console.log("DOCENTE: ALGUIEN YA CONTESTO PREGUNTA " + pregunta.id);
         }
     });
 }
 
 function suscribir(callbackURL, cb) {
     request.post({
-        json: true,
         body: { callbackURL: callbackURL },
-        url: 'http://localhost:3000/docentes'
+        url: '/docentes'
     }, cb);
 }
 
 setInterval(function () {
     if (preguntas.length > 0) {
-        responder(preguntas[0]);
+        responderConAviso(preguntas[0], "Respuesta a pregunta " + preguntas[0].id);
     }
 }, 2000);
 
 
 app.post('/', function (req, res) {
-    console.log("DOCENTE RECIBIO " + JSON.stringify(req.body));
-    preguntas.push(req.body);
-    if (req.body.respuesta) {
-        _.pull(preguntas, utils.preguntaPorId(preguntas, req.body.id));
-    } else {
+    console.log("DOCENTE: RECIBI " + JSON.stringify(req.body));
+    if (req.body.pregunta) {
         preguntas.push(req.body);
+    } else if (req.body.respuesta) {
+        _.pull(preguntas, utils.preguntaPorId(preguntas, req.body.id));
     }
     res.sendStatus(200);
 });
@@ -51,7 +68,7 @@ app.post('/', function (req, res) {
 var server = app.listen(process.argv[2], function () {
   var host = server.address().address;
   var port = server.address().port;
-  suscribir(process.argv[2], function () {
+  suscribir(callbackURL, function () {
       console.log('Docente listening at http://%s:%s', host, port);
   });
 

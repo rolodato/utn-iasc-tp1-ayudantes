@@ -19,7 +19,7 @@ setInterval(function () {
 }, 1000);
 
 app.post('/', function (req, res) {
-    console.log("ALUMNO RECIBIO " + JSON.stringify(req.body));
+    console.log("ALUMNO: RECIBI " + JSON.stringify(req.body));
     res.sendStatus(200);
 });
 
