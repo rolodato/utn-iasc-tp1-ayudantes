@@ -12,6 +12,7 @@
     "body-parser": "^1.13.3",
     "express": "^4.13.3",
     "lodash": "^3.10.1",
-    "request": "^2.61.0"
+    "request": "^2.61.0",
+    "request-promise": "^0.4.3"
   }
 }

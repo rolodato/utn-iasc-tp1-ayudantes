@@ -1,9 +1,10 @@
 var express = require('express');
-var request = require('request').defaults({
+var request = require('request-promise').defaults({
     json: true,
     baseUrl: 'http://localhost:3000/'
 });
 var _ = require('lodash');
+
 var app = express();
 var utils = require('./utils.js');
 app.use(require('body-parser').json());
@@ -11,27 +12,27 @@ app.use(require('body-parser').json());
 var preguntas = [];
 var callbackURL = "http://localhost:" + process.argv[2];
 
-function avisarRespuesta(pregunta, cb) {
-    request.post({
+function avisarRespuesta(pregunta) {
+    return request.post({
         url: '/preguntas/' + pregunta.id + '/escribir'
-    }, cb);
+    });
 }
 
 function responderConAviso(pregunta, respuesta) {
-    avisarRespuesta(pregunta, function () {
+    return avisarRespuesta(pregunta).then(function () {
         responder(pregunta, respuesta);
     });
 }
 
 function responder(pregunta, respuesta) {
     console.log("DOCENTE RESPONDIENDO PREGUNTA " + pregunta.id);
-    request.post({
+    return request.post({
         body: {
             callbackURL: callbackURL,
             respuesta: respuesta
         },
         url: '/preguntas/' + pregunta.id + '/contestar'
-    }, function (err, resp) {
+    }).then(function (resp) {
         _.pull(preguntas, pregunta);
         if (resp.statusCode === 200) {
             console.log("DOCENTE: CONTESTE PREGUNTA " + pregunta.id);
@@ -41,11 +42,11 @@ function responder(pregunta, respuesta) {
     });
 }
 
-function suscribir(callbackURL, cb) {
-    request.post({
+function suscribir(callbackURL) {
+    return request.post({
         body: { callbackURL: callbackURL },
         url: '/docentes'
-    }, cb);
+    });
 }
 
 setInterval(function () {
@@ -68,7 +69,7 @@ app.post('/', function (req, res) {
 var server = app.listen(process.argv[2], function () {
   var host = server.address().address;
   var port = server.address().port;
-  suscribir(callbackURL, function () {
+  suscribir(callbackURL).then(function () {
       console.log('Docente listening at http://%s:%s', host, port);
   });
 
